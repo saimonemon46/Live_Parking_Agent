@@ -1,0 +1,1875 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartPark — Intelligent Parking Control</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #111620;
+        --panel2: #171d2b;
+        --border: #1e2a3a;
+        --amber: #f5a623;
+        --amber-dim: #7a5110;
+        --green: #00e676;
+        --green-dim: #004d26;
+        --red: #ff3d57;
+        --red-dim: #5a0010;
+        --blue: #3d9cf5;
+        --blue-dim: #0a2a4a;
+        --purple: #b47fff;
+        --text: #c8d4e8;
+        --text-dim: #5a6a80;
+        --mono: "Share Tech Mono", monospace;
+        --sans: "Barlow", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(245, 166, 35, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(245, 166, 35, 0.02) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ── Header ── */
+      header {
+        position: relative;
+        z-index: 10;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #0d1018 0%, var(--bg) 100%);
+        padding: 18px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--amber);
+        clip-path: polygon(
+          50% 0%,
+          100% 25%,
+          100% 75%,
+          50% 100%,
+          0% 75%,
+          0% 25%
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+        font-size: 18px;
+        font-weight: 900;
+        animation: pulse-hex 3s ease-in-out infinite;
+      }
+      @keyframes pulse-hex {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 20px 6px rgba(245, 166, 35, 0.2);
+        }
+      }
+      .logo-text h1 {
+        font-family: var(--sans);
+        font-size: 1.35rem;
+        font-weight: 900;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #fff;
+      }
+      .logo-text span {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--amber);
+        letter-spacing: 2px;
+      }
+      .header-status {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--green);
+        letter-spacing: 1px;
+      }
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: blink 1.4s step-end infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+      .clock {
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+
+      /* ── Layout ── */
+      .workspace {
+        position: relative;
+        z-index: 1;
+        padding: 28px 32px;
+        max-width: 1500px;
+        margin: 0 auto;
+      }
+
+      /* ── Stat Cards ── */
+      .stat-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 20px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s;
+      }
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+      }
+      .stat-card.amber::before {
+        background: var(--amber);
+      }
+      .stat-card.green::before {
+        background: var(--green);
+      }
+      .stat-card.red::before {
+        background: var(--red);
+      }
+      .stat-card.blue::before {
+        background: var(--blue);
+      }
+      .stat-card:hover {
+        border-color: #2d3d52;
+      }
+      .stat-label {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+      }
+      .stat-value {
+        font-family: var(--mono);
+        font-size: 2.2rem;
+        font-weight: 400;
+        line-height: 1;
+      }
+      .stat-card.amber .stat-value {
+        color: var(--amber);
+      }
+      .stat-card.green .stat-value {
+        color: var(--green);
+      }
+      .stat-card.red .stat-value {
+        color: var(--red);
+      }
+      .stat-card.blue .stat-value {
+        color: var(--blue);
+      }
+      .stat-sub {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        margin-top: 6px;
+      }
+      .occ-bar-wrap {
+        height: 5px;
+        background: #1a2235;
+        border-radius: 2px;
+        margin-top: 12px;
+        overflow: hidden;
+      }
+      .occ-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--green), var(--amber));
+        border-radius: 2px;
+        transition: width 0.6s ease;
+      }
+
+      /* ── Panel ── */
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+      }
+      .panel-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .panel-title {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+      .panel-body {
+        padding: 20px;
+      }
+
+      /* ── Tabs ── */
+      .tab-bar {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+      }
+      .tab-btn {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        padding: 11px 18px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+      }
+      .tab-btn:hover {
+        color: var(--text);
+      }
+      .tab-btn.active {
+        color: var(--amber);
+        border-bottom-color: var(--amber);
+      }
+      .tab-pane {
+        display: none;
+      }
+      .tab-pane.active {
+        display: block;
+      }
+
+      /* ── Form ── */
+      .form-label {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 6px;
+      }
+      .form-control,
+      .form-select {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        padding: 10px 14px;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .form-control:focus,
+      .form-select:focus {
+        background: var(--panel2);
+        color: #fff;
+        border-color: var(--amber);
+        box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.15);
+        outline: none;
+      }
+      .form-select option {
+        background: var(--panel2);
+      }
+
+      .btn-park {
+        background: var(--amber);
+        color: #000;
+        font-family: var(--sans);
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        border: none;
+        border-radius: 3px;
+        padding: 12px 28px;
+        width: 100%;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          transform 0.1s,
+          box-shadow 0.15s;
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-park::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.15),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: transform 0.4s;
+      }
+      .btn-park:hover {
+        background: #ffc04a;
+        box-shadow: 0 0 20px rgba(245, 166, 35, 0.3);
+      }
+      .btn-park:hover::after {
+        transform: translateX(100%);
+      }
+      .btn-park:active {
+        transform: scale(0.98);
+      }
+      .btn-park:disabled {
+        background: #3a2e10;
+        color: #6a5820;
+        cursor: not-allowed;
+      }
+
+      .btn-refresh {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        padding: 5px 12px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+      }
+      .btn-refresh:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+
+      .btn-cancel-spot {
+        background: transparent;
+        border: 1px solid var(--red-dim);
+        color: var(--red);
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 1px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-cancel-spot:hover {
+        background: var(--red-dim);
+        border-color: var(--red);
+      }
+
+      /* ── Agent Pipeline ── */
+      .agent-pipe {
+        display: flex;
+        gap: 0;
+        align-items: stretch;
+        margin-bottom: 20px;
+      }
+      .agent-step {
+        flex: 1;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        padding: 14px 16px;
+        position: relative;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+      .agent-step:not(:last-child)::after {
+        content: "›";
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--border);
+        font-size: 1.2rem;
+        z-index: 2;
+      }
+      .agent-step.active {
+        border-color: var(--amber);
+        background: rgba(245, 166, 35, 0.05);
+      }
+      .agent-step.done {
+        border-color: var(--green-dim);
+        background: rgba(0, 230, 118, 0.04);
+      }
+      .agent-step.done::after {
+        color: var(--green-dim);
+      }
+      .agent-name {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .agent-step .agent-name {
+        color: var(--text-dim);
+      }
+      .agent-step.active .agent-name {
+        color: var(--amber);
+      }
+      .agent-step.done .agent-name {
+        color: var(--green);
+      }
+      .agent-icon {
+        font-size: 1.4rem;
+        margin-bottom: 6px;
+        opacity: 0.4;
+      }
+      .agent-step.active .agent-icon {
+        opacity: 1;
+        animation: spin-once 0.4s ease;
+      }
+      .agent-step.done .agent-icon {
+        opacity: 0.8;
+      }
+      @keyframes spin-once {
+        from {
+          transform: rotate(-15deg) scale(0.9);
+        }
+        to {
+          transform: none;
+        }
+      }
+
+      /* ── Result Blocks ── */
+      .result-block {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+      }
+      .result-block.visible {
+        opacity: 1;
+        transform: none;
+      }
+      .result-block-label {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .result-block.forecast .result-block-label {
+        color: var(--blue);
+      }
+      .result-block.alloc .result-block-label {
+        color: var(--amber);
+      }
+      .result-block.alert-r .result-block-label {
+        color: var(--green);
+      }
+      .result-block p {
+        font-size: 0.88rem;
+        line-height: 1.6;
+        color: var(--text);
+        margin: 0;
+      }
+
+      /* ── Spot Grid ── */
+      .spot-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+        gap: 8px;
+      }
+      .spot {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: default;
+        transition: transform 0.15s;
+        position: relative;
+        overflow: hidden;
+      }
+      .spot:hover {
+        transform: scale(1.05);
+      }
+      .spot.free {
+        background: var(--green-dim);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+      }
+      .spot.occupied {
+        background: #1a1a2e;
+        border: 1px solid #2a2a40;
+        color: var(--text-dim);
+        cursor: pointer;
+      }
+      .spot.occupied:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+      .spot.assigned {
+        background: rgba(245, 166, 35, 0.15);
+        border: 1px solid var(--amber);
+        color: var(--amber);
+        animation: glow-spot 1.5s ease-in-out infinite;
+      }
+      @keyframes glow-spot {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 12px 3px rgba(245, 166, 35, 0.2);
+        }
+      }
+      .spot-num {
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+      .spot-car-icon {
+        font-size: 1.1rem;
+        margin-bottom: 1px;
+      }
+
+      /* ── Cancel Modal ── */
+      .modal-backdrop-custom {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fade-in 0.15s ease;
+      }
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .modal-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-top: 2px solid var(--red);
+        border-radius: 4px;
+        padding: 28px 32px;
+        max-width: 420px;
+        width: 90%;
+        animation: slide-up 0.2s ease;
+      }
+      @keyframes slide-up {
+        from {
+          transform: translateY(16px);
+          opacity: 0;
+        }
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+      .modal-title {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--red);
+        margin-bottom: 16px;
+      }
+      .modal-body {
+        font-size: 0.88rem;
+        color: var(--text);
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+      .modal-info {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+      }
+      .modal-info div {
+        margin-bottom: 4px;
+        color: var(--text-dim);
+      }
+      .modal-info span {
+        color: var(--text);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      .btn-modal-cancel {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 1px;
+        padding: 8px 16px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-modal-cancel:hover {
+        border-color: var(--text-dim);
+        color: var(--text);
+      }
+      .btn-modal-confirm {
+        background: var(--red);
+        color: #fff;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 1px;
+        padding: 8px 16px;
+        border-radius: 3px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-modal-confirm:hover {
+        background: #ff6b7a;
+      }
+      .btn-modal-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* ── Active Vehicles Table ── */
+      .alloc-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+      }
+      .alloc-table th {
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+      .alloc-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid #151c28;
+        color: var(--text);
+        vertical-align: middle;
+      }
+      .alloc-table tr:last-child td {
+        border-bottom: none;
+      }
+      .alloc-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .badge-type {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 1px;
+        padding: 2px 7px;
+        border-radius: 2px;
+        text-transform: uppercase;
+      }
+      .badge-type.car {
+        background: var(--blue-dim);
+        color: var(--blue);
+      }
+      .badge-type.motorcycle {
+        background: rgba(180, 127, 255, 0.12);
+        color: var(--purple);
+      }
+      .badge-type.truck {
+        background: rgba(245, 166, 35, 0.12);
+        color: var(--amber);
+      }
+      .spot-badge {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        background: rgba(245, 166, 35, 0.1);
+        border: 1px solid var(--amber-dim);
+        color: var(--amber);
+        padding: 2px 8px;
+        border-radius: 2px;
+      }
+
+      /* ── History Table ── */
+      .hist-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.76rem;
+      }
+      .hist-table th {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+      }
+      .hist-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #151c28;
+        color: var(--text);
+        vertical-align: middle;
+      }
+      .hist-table tr:last-child td {
+        border-bottom: none;
+      }
+      .hist-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .status-pill {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 1px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        text-transform: uppercase;
+      }
+      .status-pill.active {
+        background: rgba(0, 230, 118, 0.1);
+        color: var(--green);
+        border: 1px solid var(--green-dim);
+      }
+      .status-pill.freed {
+        background: #1a1a2e;
+        color: var(--text-dim);
+        border: 1px solid #2a2a40;
+      }
+
+      /* ── Log ── */
+      .log-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      .log-list::-webkit-scrollbar {
+        width: 4px;
+      }
+      .log-list::-webkit-scrollbar-thumb {
+        background: var(--border);
+      }
+      .log-entry {
+        display: flex;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #1a2030;
+        animation: slide-in 0.3s ease;
+        font-size: 0.78rem;
+      }
+      @keyframes slide-in {
+        from {
+          opacity: 0;
+          transform: translateX(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .log-time {
+        font-family: var(--mono);
+        color: var(--text-dim);
+        white-space: nowrap;
+        font-size: 0.68rem;
+      }
+      .log-msg {
+        color: var(--text);
+        line-height: 1.4;
+      }
+      .log-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+      .log-dot.ok {
+        background: var(--green);
+      }
+      .log-dot.warn {
+        background: var(--amber);
+      }
+      .log-dot.err {
+        background: var(--red);
+      }
+
+      /* ── Loading ── */
+      .spinner-ring {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(245, 166, 35, 0.2);
+        border-top-color: var(--amber);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── Toast ── */
+      #toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .toast-msg {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--green);
+        padding: 12px 18px;
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--text);
+        max-width: 320px;
+        animation: toast-in 0.3s ease;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .toast-msg.warn {
+        border-left-color: var(--amber);
+      }
+      .toast-msg.err {
+        border-left-color: var(--red);
+      }
+
+      /* ── Misc ── */
+      .section-label {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .section-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .empty-state {
+        text-align: center;
+        padding: 36px 20px;
+        color: var(--text-dim);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+      }
+      .empty-state i {
+        font-size: 2rem;
+        opacity: 0.3;
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      /* scroll inside tables */
+      .table-scroll {
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .table-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .table-scroll::-webkit-scrollbar-thumb {
+        background: var(--border);
+      }
+
+      @media (max-width: 768px) {
+        header {
+          padding: 14px 16px;
+        }
+        .workspace {
+          padding: 16px;
+        }
+        .agent-pipe {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .agent-step::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">P</div>
+        <div class="logo-text">
+          <h1>SmartPark</h1>
+          <span>Intelligent Parking Control System v2.1</span>
+        </div>
+      </div>
+      <div class="header-status">
+        <div class="live-badge"><span class="live-dot"></span>SYSTEM LIVE</div>
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- Workspace -->
+    <div class="workspace">
+      <!-- Stats Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card amber">
+            <div class="stat-label">Total Spots</div>
+            <div class="stat-value" id="stat-total">20</div>
+            <div class="stat-sub">monitored via sensors</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card green">
+            <div class="stat-label">Available</div>
+            <div class="stat-value" id="stat-free">—</div>
+            <div class="stat-sub">free spots right now</div>
+            <div class="occ-bar-wrap">
+              <div class="occ-bar" id="free-bar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card red">
+            <div class="stat-label">Occupied</div>
+            <div class="stat-value" id="stat-occupied">—</div>
+            <div class="stat-sub">vehicles parked</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card blue">
+            <div class="stat-label">Occupancy</div>
+            <div class="stat-value" id="stat-occ-pct">
+              —<span style="font-size: 1rem">%</span>
+            </div>
+            <div class="stat-sub">current load</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main 3-Column Layout -->
+      <div class="row g-3">
+        <!-- COL A: Entry form + Pipeline -->
+        <div class="col-lg-4">
+          <!-- Park Form -->
+          <div class="panel mb-3">
+            <div class="panel-header">
+              <span class="panel-title"
+                ><i class="bi bi-car-front me-2"></i>Vehicle Entry</span
+              >
+              <span
+                style="
+                  font-family: var(--mono);
+                  font-size: 0.65rem;
+                  color: var(--text-dim);
+                "
+                >POST /park</span
+              >
+            </div>
+            <div class="panel-body">
+              <div class="mb-3">
+                <label class="form-label">License Plate</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="plate-input"
+                  placeholder="e.g. ABC-1234"
+                  maxlength="12"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Vehicle Type</label>
+                <select class="form-select" id="type-select">
+                  <option value="car">🚗 Car</option>
+                  <option value="motorcycle">🏍 Motorcycle</option>
+                  <option value="truck">🚛 Truck</option>
+                </select>
+              </div>
+              <button class="btn-park" id="park-btn" onclick="submitPark()">
+                <i class="bi bi-arrow-right-circle me-2"></i>Request Parking
+                Spot
+              </button>
+            </div>
+          </div>
+
+          <!-- Agent Pipeline -->
+          <div class="panel mb-3">
+            <div class="panel-header">
+              <span class="panel-title"
+                ><i class="bi bi-diagram-3 me-2"></i>Agent Pipeline</span
+              >
+              <span
+                id="pipe-status"
+                style="
+                  font-family: var(--mono);
+                  font-size: 0.65rem;
+                  color: var(--text-dim);
+                "
+                >IDLE</span
+              >
+            </div>
+            <div class="panel-body">
+              <div class="agent-pipe" id="agent-pipe">
+                <div class="agent-step" id="step-monitor">
+                  <div class="agent-icon">📡</div>
+                  <div class="agent-name">Monitor</div>
+                  <div
+                    style="
+                      font-size: 0.6rem;
+                      color: var(--text-dim);
+                      margin-top: 3px;
+                    "
+                  >
+                    Sensor Polling
+                  </div>
+                </div>
+                <div class="agent-step" id="step-predictor">
+                  <div class="agent-icon">🔮</div>
+                  <div class="agent-name">Predictor</div>
+                  <div
+                    style="
+                      font-size: 0.6rem;
+                      color: var(--text-dim);
+                      margin-top: 3px;
+                    "
+                  >
+                    LLM Forecast
+                  </div>
+                </div>
+                <div class="agent-step" id="step-allocator">
+                  <div class="agent-icon">🎯</div>
+                  <div class="agent-name">Allocator</div>
+                  <div
+                    style="
+                      font-size: 0.6rem;
+                      color: var(--text-dim);
+                      margin-top: 3px;
+                    "
+                  >
+                    Spot Assignment
+                  </div>
+                </div>
+                <div class="agent-step" id="step-alert">
+                  <div class="agent-icon">🔔</div>
+                  <div class="agent-name">Alert</div>
+                  <div
+                    style="
+                      font-size: 0.6rem;
+                      color: var(--text-dim);
+                      margin-top: 3px;
+                    "
+                  >
+                    Notification
+                  </div>
+                </div>
+              </div>
+
+              <!-- Results -->
+              <div id="result-area">
+                <div class="empty-state" id="empty-msg">
+                  <i class="bi bi-broadcast"></i>
+                  Awaiting vehicle entry request...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Log -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title"
+                ><i class="bi bi-terminal me-2"></i>Activity Log</span
+              >
+              <button class="btn-refresh" onclick="clearLog()">
+                <i class="bi bi-trash me-1"></i>Clear
+              </button>
+            </div>
+            <div class="panel-body" style="padding-top: 8px">
+              <ul class="log-list" id="log-list">
+                <li class="log-entry">
+                  <span class="log-dot ok"></span>
+                  <span class="log-time" id="boot-time"></span>
+                  <span class="log-msg"
+                    >System initialised. Sensor array online.</span
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- COL B: Spot Map -->
+        <div class="col-lg-4">
+          <div class="panel" style="height: 100%">
+            <div class="panel-header">
+              <span class="panel-title"
+                ><i class="bi bi-grid-3x3 me-2"></i>Spot Map</span
+              >
+              <button class="btn-refresh" onclick="refreshStatus()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+              </button>
+            </div>
+            <div class="panel-body">
+              <p
+                style="
+                  font-family: var(--mono);
+                  font-size: 0.62rem;
+                  color: var(--text-dim);
+                  margin-bottom: 14px;
+                "
+              >
+                Click an <span style="color: var(--red)">occupied</span> spot to
+                release it.
+              </p>
+              <div class="spot-grid" id="spot-grid"></div>
+              <div
+                class="mt-3 d-flex gap-4"
+                style="font-family: var(--mono); font-size: 0.62rem"
+              >
+                <span><span style="color: var(--green)">■</span> Free</span>
+                <span><span style="color: #2a2a40">■</span> Occupied</span>
+                <span
+                  ><span style="color: var(--amber)">■</span> Just
+                  Assigned</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COL C: Active Vehicles + History tabs -->
+        <div class="col-lg-4">
+          <div class="panel" style="height: 100%">
+            <div class="tab-bar">
+              <button
+                class="tab-btn active"
+                onclick="switchTab('active', this)"
+              >
+                <i class="bi bi-car-front me-1"></i>Active
+              </button>
+              <button class="tab-btn" onclick="switchTab('history', this)">
+                <i class="bi bi-clock-history me-1"></i>History
+              </button>
+            </div>
+
+            <!-- Active tab -->
+            <div class="tab-pane active" id="tab-active">
+              <div class="panel-header" style="border-top: none">
+                <span class="panel-title">Parked Vehicles</span>
+                <button class="btn-refresh" onclick="refreshActive()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+              </div>
+              <div class="panel-body" style="padding: 0">
+                <div class="table-scroll">
+                  <div id="active-content">
+                    <div class="empty-state">
+                      <i class="bi bi-car-front"></i>No vehicles parked
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- History tab -->
+            <div class="tab-pane" id="tab-history">
+              <div class="panel-header" style="border-top: none">
+                <span class="panel-title">Allocation History</span>
+                <button class="btn-refresh" onclick="refreshHistory()">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+              </div>
+              <div class="panel-body" style="padding: 0">
+                <div class="table-scroll">
+                  <div id="history-content">
+                    <div class="empty-state">
+                      <i class="bi bi-clock-history"></i>No records yet
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /row -->
+    </div>
+    <!-- /workspace -->
+
+    <!-- Cancel Modal -->
+    <div id="cancel-modal" style="display: none">
+      <div class="modal-backdrop-custom" onclick="closeModal(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+          <div class="modal-title">
+            <i class="bi bi-exclamation-triangle me-2"></i>Release Parking Spot
+          </div>
+          <div class="modal-body">
+            Are you sure you want to release this spot and check out the
+            vehicle?
+          </div>
+          <div class="modal-info" id="modal-info"></div>
+          <div class="modal-actions">
+            <button class="btn-modal-cancel" onclick="closeModal()">
+              Cancel
+            </button>
+            <button
+              class="btn-modal-confirm"
+              id="modal-confirm-btn"
+              onclick="confirmCancel()"
+            >
+              <i class="bi bi-unlock me-1"></i>Release Spot
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      /* ── Config ── */
+      const API_BASE = "http://127.0.0.1:8000";
+
+      /* ── State ── */
+      let spotData = {}; // { "SPOT-1": "free"|"occupied" }
+      let activeAlloc = {}; // { "SPOT-7": { vehicle_plate, vehicle_type, allocated_at, ... } }
+      let assignedSpot = null;
+      let pendingCancelSpot = null;
+
+      /* ── Clock ── */
+      function tickClock() {
+        document.getElementById("clock").textContent =
+          new Date().toLocaleTimeString("en-GB", { hour12: false });
+      }
+      setInterval(tickClock, 1000);
+      tickClock();
+      document.getElementById("boot-time").textContent =
+        new Date().toLocaleTimeString("en-GB", { hour12: false });
+
+      /* ── Toast ── */
+      function showToast(msg, type = "ok") {
+        const t = document.createElement("div");
+        t.className = `toast-msg ${type === "ok" ? "" : type}`;
+        t.textContent = msg;
+        document.getElementById("toast-container").appendChild(t);
+        setTimeout(() => t.remove(), 4000);
+      }
+
+      /* ── Log ── */
+      function addLog(msg, type = "ok") {
+        const li = document.createElement("li");
+        li.className = "log-entry";
+        li.innerHTML = `
+          <span class="log-dot ${type}"></span>
+          <span class="log-time">${new Date().toLocaleTimeString("en-GB", { hour12: false })}</span>
+          <span class="log-msg">${msg}</span>`;
+        const list = document.getElementById("log-list");
+        list.prepend(li);
+        if (list.children.length > 60) list.lastElementChild.remove();
+      }
+
+      function clearLog() {
+        document.getElementById("log-list").innerHTML = "";
+        addLog("Log cleared by operator.");
+      }
+
+      /* ── Tabs ── */
+      function switchTab(name, btn) {
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById(`tab-${name}`).classList.add("active");
+        btn.classList.add("active");
+        if (name === "history") refreshHistory();
+      }
+
+      /* ── Spot Grid ── */
+      function renderSpots(snapshot) {
+        const grid = document.getElementById("spot-grid");
+        grid.innerHTML = "";
+        Object.entries(snapshot)
+          .sort((a, b) => {
+            const na = parseInt(a[0].replace("SPOT-", ""));
+            const nb = parseInt(b[0].replace("SPOT-", ""));
+            return na - nb;
+          })
+          .forEach(([id, status]) => {
+            const div = document.createElement("div");
+            const isNew = assignedSpot && id === assignedSpot;
+            div.className = `spot ${isNew ? "assigned" : status}`;
+            const num = id.replace("SPOT-", "");
+            const alloc = activeAlloc[id];
+            div.innerHTML = `
+              <div class="spot-car-icon">${status === "free" ? "🟢" : isNew ? "🟡" : "🔴"}</div>
+              <div class="spot-num">${num}</div>
+              <div>${isNew ? "NEW" : status.toUpperCase()}</div>`;
+
+            if (status === "occupied" && !isNew) {
+              div.title = alloc
+                ? `${id} — ${alloc.vehicle_plate} (${alloc.vehicle_type})\nParked: ${fmtTime(alloc.allocated_at)}\nClick to release`
+                : `${id} — Occupied. Click to release.`;
+              div.addEventListener("click", () => openCancelModal(id, alloc));
+            } else {
+              div.title = `${id}: ${isNew ? "just assigned" : status}`;
+            }
+
+            grid.appendChild(div);
+          });
+      }
+
+      /* ── /status (real spot map) ── */
+      async function refreshStatus() {
+        try {
+          const res = await fetch(`${API_BASE}/status`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const d = await res.json();
+
+          document.getElementById("stat-total").textContent = d.total_spots;
+          document.getElementById("stat-free").textContent = d.free;
+          document.getElementById("stat-occupied").textContent = d.occupied;
+          document.getElementById("stat-occ-pct").innerHTML =
+            `${d.occupancy_pct}<span style="font-size:1rem">%</span>`;
+          document.getElementById("free-bar").style.width =
+            (d.free / d.total_spots) * 100 + "%";
+
+          // Use real per-spot map from the new /status endpoint
+          if (d.spots) {
+            spotData = d.spots;
+          }
+          renderSpots(spotData);
+          addLog(
+            `Status refreshed — ${d.free}/${d.total_spots} free (${d.occupancy_pct}% occupied)`,
+          );
+          await refreshActive();
+        } catch (e) {
+          addLog(`Cannot reach API: ${e.message}`, "err");
+          showToast("Cannot reach parking API. Using demo mode.", "warn");
+          loadDemoStatus();
+        }
+      }
+
+      function loadDemoStatus() {
+        const snap = {};
+        for (let i = 1; i <= 20; i++) {
+          snap[`SPOT-${i}`] = Math.random() < 0.55 ? "occupied" : "free";
+        }
+        spotData = snap;
+        const free = Object.values(snap).filter((v) => v === "free").length;
+        const occ = 20 - free;
+        const pct = ((occ / 20) * 100).toFixed(1);
+        document.getElementById("stat-total").textContent = 20;
+        document.getElementById("stat-free").textContent = free;
+        document.getElementById("stat-occupied").textContent = occ;
+        document.getElementById("stat-occ-pct").innerHTML =
+          `${pct}<span style="font-size:1rem">%</span>`;
+        document.getElementById("free-bar").style.width =
+          (free / 20) * 100 + "%";
+        renderSpots(snap);
+      }
+
+      /* ── /allocations/active ── */
+      async function refreshActive() {
+        try {
+          const res = await fetch(`${API_BASE}/allocations/active`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const rows = await res.json();
+
+          // rebuild lookup map for spot tooltips
+          activeAlloc = {};
+          rows.forEach((r) => {
+            activeAlloc[r.spot_id] = r;
+          });
+
+          const el = document.getElementById("active-content");
+          if (!rows.length) {
+            el.innerHTML = `<div class="empty-state"><i class="bi bi-car-front"></i>No vehicles currently parked</div>`;
+            return;
+          }
+
+          el.innerHTML = `
+            <table class="alloc-table">
+              <thead>
+                <tr>
+                  <th>Spot</th>
+                  <th>Plate</th>
+                  <th>Type</th>
+                  <th>Since</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows
+                  .map(
+                    (r) => `
+                  <tr>
+                    <td><span class="spot-badge">${r.spot_id}</span></td>
+                    <td style="font-family:var(--mono);font-size:.72rem;color:#fff">${r.vehicle_plate}</td>
+                    <td><span class="badge-type ${r.vehicle_type}">${r.vehicle_type}</span></td>
+                    <td style="font-family:var(--mono);font-size:.65rem;color:var(--text-dim)">${fmtTime(r.allocated_at)}</td>
+                    <td>
+                      <button class="btn-cancel-spot" onclick='openCancelModal("${r.spot_id}", ${JSON.stringify(r)})'>
+                        <i class="bi bi-unlock me-1"></i>Free
+                      </button>
+                    </td>
+                  </tr>`,
+                  )
+                  .join("")}
+              </tbody>
+            </table>`;
+        } catch (e) {
+          document.getElementById("active-content").innerHTML =
+            `<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Could not load active vehicles</div>`;
+        }
+      }
+
+      /* ── /allocations/history ── */
+      async function refreshHistory() {
+        try {
+          const res = await fetch(`${API_BASE}/allocations/history?limit=50`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const rows = await res.json();
+
+          const el = document.getElementById("history-content");
+          if (!rows.length) {
+            el.innerHTML = `<div class="empty-state"><i class="bi bi-clock-history"></i>No allocation records yet</div>`;
+            return;
+          }
+
+          el.innerHTML = `
+            <table class="hist-table">
+              <thead>
+                <tr>
+                  <th>Spot</th>
+                  <th>Plate</th>
+                  <th>In</th>
+                  <th>Out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows
+                  .map(
+                    (r) => `
+                  <tr>
+                    <td><span class="spot-badge">${r.spot_id}</span></td>
+                    <td style="font-family:var(--mono);font-size:.7rem;color:#fff">${r.vehicle_plate}</td>
+                    <td style="font-family:var(--mono);font-size:.63rem;color:var(--text-dim)">${fmtTime(r.allocated_at)}</td>
+                    <td style="font-family:var(--mono);font-size:.63rem;color:var(--text-dim)">${r.freed_at ? fmtTime(r.freed_at) : "—"}</td>
+                    <td><span class="status-pill ${r.freed_at ? "freed" : "active"}">${r.freed_at ? "freed" : "active"}</span></td>
+                  </tr>`,
+                  )
+                  .join("")}
+              </tbody>
+            </table>`;
+        } catch (e) {
+          document.getElementById("history-content").innerHTML =
+            `<div class="empty-state"><i class="bi bi-exclamation-circle"></i>Could not load history</div>`;
+        }
+      }
+
+      /* ── Cancel Modal ── */
+      function openCancelModal(spotId, allocRow) {
+        pendingCancelSpot = spotId;
+        const info = document.getElementById("modal-info");
+        if (allocRow) {
+          info.innerHTML = `
+            <div>Spot &nbsp;&nbsp;<span>${spotId}</span></div>
+            <div>Plate &nbsp;<span>${allocRow.vehicle_plate}</span></div>
+            <div>Type &nbsp;&nbsp;<span>${allocRow.vehicle_type}</span></div>
+            <div>Parked <span>${fmtTime(allocRow.allocated_at)}</span></div>`;
+        } else {
+          info.innerHTML = `<div>Spot <span>${spotId}</span></div>`;
+        }
+        document.getElementById("modal-confirm-btn").disabled = false;
+        document.getElementById("cancel-modal").style.display = "block";
+      }
+
+      function closeModal(e) {
+        if (e && e.target !== document.querySelector(".modal-backdrop-custom"))
+          return;
+        document.getElementById("cancel-modal").style.display = "none";
+        pendingCancelSpot = null;
+      }
+
+      // Also close when clicking X (backdrop click without e target check)
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          document.getElementById("cancel-modal").style.display = "none";
+          pendingCancelSpot = null;
+        }
+      });
+
+      async function confirmCancel() {
+        if (!pendingCancelSpot) return;
+        const btn = document.getElementById("modal-confirm-btn");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-ring"></span>Releasing...';
+
+        try {
+          const res = await fetch(`${API_BASE}/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ spot_id: pendingCancelSpot }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || `HTTP ${res.status}`);
+          }
+
+          const d = await res.json();
+          document.getElementById("cancel-modal").style.display = "none";
+
+          addLog(
+            `✅ ${d.spot_id} released — ${d.vehicle_plate} checked out`,
+            "ok",
+          );
+          showToast(d.message, "ok");
+
+          // Immediately update local spot state
+          if (spotData[d.spot_id]) spotData[d.spot_id] = "free";
+          if (assignedSpot === d.spot_id) assignedSpot = null;
+          delete activeAlloc[d.spot_id];
+          renderSpots(spotData);
+
+          // Full refresh after short delay
+          setTimeout(() => refreshStatus(), 600);
+        } catch (e) {
+          addLog(`Cancel failed: ${e.message}`, "err");
+          showToast(`Failed to release spot: ${e.message}`, "err");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-unlock me-1"></i>Release Spot';
+        } finally {
+          pendingCancelSpot = null;
+        }
+      }
+
+      /* ── Agent Pipeline ── */
+      const steps = ["monitor", "predictor", "allocator", "alert"];
+
+      function resetPipeline() {
+        steps.forEach(
+          (s) =>
+            (document.getElementById(`step-${s}`).className = "agent-step"),
+        );
+        document.getElementById("pipe-status").textContent = "IDLE";
+        document.getElementById("pipe-status").style.color = "var(--text-dim)";
+      }
+
+      function activateStep(s) {
+        document.getElementById(`step-${s}`).className = "agent-step active";
+      }
+      function doneStep(s) {
+        document.getElementById(`step-${s}`).className = "agent-step done";
+      }
+
+      /* ── Park Request ── */
+      async function submitPark() {
+        const plate = document
+          .getElementById("plate-input")
+          .value.trim()
+          .toUpperCase();
+        const type = document.getElementById("type-select").value;
+        if (!plate) {
+          showToast("Please enter a license plate number.", "warn");
+          document.getElementById("plate-input").focus();
+          return;
+        }
+
+        const btn = document.getElementById("park-btn");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-ring"></span>Processing...';
+
+        resetPipeline();
+        document.getElementById("pipe-status").textContent = "RUNNING";
+        document.getElementById("pipe-status").style.color = "var(--amber)";
+        document.getElementById("result-area").innerHTML = "";
+        assignedSpot = null;
+
+        addLog(
+          `Vehicle ${plate} (${type}) requesting entry — agents initialising...`,
+          "warn",
+        );
+
+        const delays = [0, 600, 1300, 2000];
+        steps.forEach((s, i) => setTimeout(() => activateStep(s), delays[i]));
+
+        try {
+          const res = await fetch(`${API_BASE}/park`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vehicle_plate: plate, vehicle_type: type }),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const d = await res.json();
+
+          setTimeout(() => {
+            steps.forEach((s) => doneStep(s));
+            document.getElementById("pipe-status").textContent = "COMPLETE";
+            document.getElementById("pipe-status").style.color = "var(--green)";
+            renderResults(d, plate);
+          }, 2600);
+
+          // highlight assigned spot
+          if (d.allocated_spot) {
+            assignedSpot = d.allocated_spot;
+            setTimeout(() => {
+              if (spotData[assignedSpot]) spotData[assignedSpot] = "occupied";
+              renderSpots(spotData);
+            }, 2800);
+          }
+
+          addLog(`${plate} → ${d.allocation}`, "ok");
+          addLog(`Forecast: ${d.forecast}`, "ok");
+          setTimeout(() => refreshStatus(), 3200);
+        } catch (e) {
+          addLog(`API error: ${e.message} — loading demo result`, "err");
+          showToast("API unavailable — showing demo result.", "warn");
+          const demo = buildDemoResult(plate, type);
+          setTimeout(() => {
+            steps.forEach((s) => doneStep(s));
+            document.getElementById("pipe-status").textContent =
+              "COMPLETE (DEMO)";
+            document.getElementById("pipe-status").style.color = "var(--amber)";
+            renderResults(demo, plate);
+            const m = demo.allocation.match(/SPOT-\d+/i);
+            if (m) {
+              assignedSpot = m[0].toUpperCase();
+              if (spotData[assignedSpot]) {
+                spotData[assignedSpot] = "occupied";
+                renderSpots(spotData);
+              }
+            }
+          }, 2600);
+        }
+
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML =
+            '<i class="bi bi-arrow-right-circle me-2"></i>Request Parking Spot';
+        }, 3000);
+      }
+
+      function buildDemoResult(plate, type) {
+        const free = Object.entries(spotData)
+          .filter(([, v]) => v === "free")
+          .map(([k]) => k);
+        let picked = null;
+        if (free.length) {
+          if (type === "truck")
+            picked =
+              free.find((s) => parseInt(s.replace("SPOT-", "")) >= 10) ||
+              free[0];
+          else if (type === "motorcycle")
+            picked =
+              free.find((s) => parseInt(s.replace("SPOT-", "")) <= 3) ||
+              free[0];
+          else picked = free[Math.floor(Math.random() * free.length)];
+        }
+        const alloc = picked
+          ? `Assign ${picked} because it suits a ${type} and is currently available.`
+          : `No spots available for vehicle ${plate}. Redirecting to overflow lot.`;
+        const occ = Object.values(spotData).filter(
+          (v) => v === "occupied",
+        ).length;
+        const pct = ((occ / 20) * 100).toFixed(0);
+        return {
+          occupancy_rate: occ / 20,
+          forecast: `Given ${pct}% occupancy at this time of day, expect ${pct > 70 ? "continued high demand for the next 30 minutes." : "conditions to remain stable over the next 30 minutes."}`,
+          allocation: alloc,
+          allocated_spot: picked,
+          alert: `🚗 ${plate}, your spot is ready! ${alloc.replace("Assign ", "")} Have a great visit.`,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      function renderResults(d, plate) {
+        const noSpot =
+          d.allocation.toLowerCase().includes("no spots") ||
+          d.allocation.toLowerCase().includes("overflow");
+        document.getElementById("result-area").innerHTML = `
+          <div class="section-label mt-2">Agent Output</div>
+
+          <div class="result-block forecast" id="rb-forecast">
+            <div class="result-block-label">
+              <i class="bi bi-graph-up-arrow"></i> Occupancy Forecast
+              <span style="margin-left:auto;font-size:.6rem;color:var(--text-dim)">${new Date(d.timestamp || Date.now()).toLocaleTimeString()}</span>
+            </div>
+            <p>${d.forecast}</p>
+          </div>
+
+          <div class="result-block ${noSpot ? "" : "alloc"}" id="rb-alloc"
+               style="${noSpot ? "border-left:3px solid var(--red)" : ""}">
+            <div class="result-block-label" style="${noSpot ? "color:var(--red)" : ""}">
+              <i class="bi bi-${noSpot ? "exclamation-triangle" : "geo-alt"}"></i>
+              Spot Allocation — ${plate}
+            </div>
+            <p>${d.allocation}</p>
+          </div>
+
+          <div class="result-block alert-r" id="rb-alert">
+            <div class="result-block-label"><i class="bi bi-bell"></i> Driver Notification</div>
+            <p>${d.alert}</p>
+          </div>
+
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--text-dim);text-align:right;margin-top:4px">
+            Occupancy at request: ${(d.occupancy_rate * 100).toFixed(1)}%
+          </div>`;
+
+        ["rb-forecast", "rb-alloc", "rb-alert"].forEach((id, i) => {
+          setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("visible");
+          }, i * 180);
+        });
+
+        const spotLabel =
+          d.allocated_spot || d.allocation.match(/SPOT-\d+/i)?.[0];
+        showToast(
+          noSpot
+            ? "No free spots — overflow recommended"
+            : `${plate} → ${spotLabel || "assigned"}`,
+          noSpot ? "warn" : "ok",
+        );
+      }
+
+      /* ── Helpers ── */
+      function fmtTime(iso) {
+        if (!iso) return "—";
+        const d = new Date(iso);
+        return d.toLocaleTimeString("en-GB", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      /* ── Init ── */
+      window.addEventListener("DOMContentLoaded", () => {
+        loadDemoStatus();
+        setTimeout(refreshStatus, 500);
+        setInterval(refreshStatus, 30000);
+        document
+          .getElementById("plate-input")
+          .addEventListener("keydown", (e) => {
+            if (e.key === "Enter") submitPark();
+          });
+      });
+    </script>
+  </body>
+</html>
